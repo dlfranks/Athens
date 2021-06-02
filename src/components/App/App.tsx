@@ -1,19 +1,27 @@
 import React from 'react';
-import EsriMap from "@arcgis/core/Map";
-import MapView from "@arcgis/core/views/MapView";
-import Extent from "@arcgis/core/geometry/Extent";
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-import Element from "@arcgis/core/form/elements/Element";
-import FormTemplate from '@arcgis/core/form/FormTemplate';
-import FieldElement from '@arcgis/core/form/elements/FieldElement';
+
+import styled from 'styled-components';
 
 import AppCSS from './App.css';
 import MView from '../MView/MView';
+import Button from 'calcite-react/Button';
+
 
 const App:React.FC<{}> = ({}) =>{
 
+  const HeaderDiv = styled.div`
+    height: 30px;
+    padding: 0 2rem;
+    display: flex;
+`;
+  const loader = document.createElement("calcite-loader");
+  document.body.appendChild(loader);
+  loader.active = true;
+
   return (
   <>
+    <div></div>
+    
     <MView/>
   </>);
 };

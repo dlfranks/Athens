@@ -6,6 +6,7 @@ const OptimizeCSSAssets = require('optimize-css-assets-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
+
 module.exports =  (env, options)=> {
 
     const devMode = options.mode === 'development' ? true : false;
@@ -114,7 +115,9 @@ module.exports =  (env, options)=> {
                 }
             }),
             new CleanWebpackPlugin(),
-            // new BundleAnalyzerPlugin()
+            //new BundleAnalyzerPlugin(),
+            
+            
         ],
         optimization: {
             splitChunks: {
