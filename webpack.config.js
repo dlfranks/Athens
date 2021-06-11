@@ -6,7 +6,6 @@ const OptimizeCSSAssets = require('optimize-css-assets-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
-
 module.exports =  (env, options)=> {
 
     const devMode = options.mode === 'development' ? true : false;
@@ -45,27 +44,8 @@ module.exports =  (env, options)=> {
                         }
                     ]
                 },
-                { 
-                    test: /\.woff$/, 
-                    use:[
-                        {
-                            loader: 'url-loader',
-                            options:{
-                                limit:10000
-                            }
-                        }   
-                    ]
-                 },
-                { 
-                    test: /\.ttf$/,  
-                    use:[
-                        {
-                        loader: 'url-loader',
-                        options:{
-                            limit:10000
-                        }
-                    }] 
-                },
+                { test: /\.woff$/, loader: "url-loader?limit=10000&mimetype=application/font-woff" },
+                { test: /\.ttf$/,  loader: "url-loader?limit=10000&mimetype=application/octet-stream" },
                 { test: /\.eot$/,  loader: "file-loader" },
                 { 
                     test: /\.svg$/,  
@@ -115,9 +95,7 @@ module.exports =  (env, options)=> {
                 }
             }),
             new CleanWebpackPlugin(),
-            //new BundleAnalyzerPlugin(),
-            
-            
+            // new BundleAnalyzerPlugin()
         ],
         optimization: {
             splitChunks: {

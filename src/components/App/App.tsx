@@ -1,29 +1,31 @@
-import React from 'react';
-
+import React, {useState} from 'react';
 import styled from 'styled-components';
+import IMapView from 'esri/views/MapView';
 
-import AppCSS from './App.css';
+import TopHeader from '../TopHeader/TopHeader';
 import MView from '../MView/MView';
-import Button from 'calcite-react/Button';
+import TimeSlider from '../TimeSlider/TimeSlider';
+import MapViewControl from '../../containers/MapViewControl/MapViewControl';
 
+export interface IState{
+  layers: string[];
+  mapView?:IMapView;
+}
 
 const App:React.FC<{}> = ({}) =>{
 
-  const HeaderDiv = styled.div`
-    height: 30px;
-    padding: 0 2rem;
-    display: flex;
-`;
-  const loader = document.createElement("calcite-loader");
-  document.body.appendChild(loader);
-  loader.active = true;
+  
+
+    
 
   return (
-  <>
-    <div></div>
-    
-    <MView/>
-  </>);
+  <div>
+    <MView>
+      <TimeSlider />
+    </MView>
+     
+
+  </div>);
 };
 
 export default App;
