@@ -2,55 +2,25 @@ import React from 'react';
 import {loadModules} from 'esri-loader';
 import IMapView from 'esri/views/MapView';
 import IFeatureSet from 'esri/tasks/support/FeatureSet'
+import IFeatureLayer from 'esri/layers/FeatureLayer';
+import IFeatureLayerView from 'esri/views/layers/FeatureLayerView';
  
 interface Props {
-    view?:IMapView;
+    mapView?:IMapView;
+    layerService?: IFeatureLayerView;
 }
-export default function TimeSlider ({view = null}:Props){
+interface QueryParam {
+  layerView: IFeatureLayerView;
+  startDate: Date;
+  endDate: Date;
+}
+export default function TimeSliderView ({mapView = null, layerService}:Props){
 
-  const timeSliderRef = React.useRef<HTMLElement>();
+  const timeSliderRef = React.useRef<HTMLDivElement>();
 
-    const definitions = [
-        { id: 0, year: 2014, offset: 4 },
-        { id: 1, year: 2015, offset: 3 },
-        { id: 2, year: 2016, offset: 2 },
-        { id: 3, year: 2017, offset: 1 },
-        { id: 4, year: 2018, offset: 0 }
-      ];
-    // fire stats for each year between 2014 - 2018
-    const sumAcres = {
-        onStatisticField: "GIS_ACRES",
-        outStatisticFieldName: "acres_sum",
-        statisticType: "sum"
-      };
-    const fireCounts = {
-        onStatisticField: "OBJECTID",
-        outStatisticFieldName: "fire_counts",
-        statisticType: "count"
-      };
-    const year = {
-        onStatisticField: "ALARM_DATE",
-        outStatisticFieldName: "year",
-        statisticType: "max"
-      }
-      // stats query
-      const statQuery = {
-        outStatistics: [
-          sumAcres,
-          fireCounts,
-          year
-        ],
-        timeExtent:{start:new Date(), end:new Date()}
 
-        
-      };
-
-    const init= () => {
-        if(view){
-            updateMapView();
-        }
-      }
-    const updateMapView = async() => {
+    
+    const initTimeSliderView = async() => {
         
         loadModules(['esri/widgets/TimeSlider', 
         "esri/layers/FeatureLayer",
@@ -60,87 +30,70 @@ export default function TimeSlider ({view = null}:Props){
         "esri/core/promiseUtils",
         ]).then(([TimeSlider, FeatureLayer, Legend, Expand,  watchUtils, promiseUtils]) => {
         // create a new instance of timeslider
-        let timeSlider = new TimeSlider({
-            container: timeSliderRef,
-            view: view,
-            fullTimeExtent: {
-            start: new Date(2018, 0, 1),
-            end: new Date(2018, 11, 1)
-            },
-            playRate: 2000,
-            stops: {
-            interval: {
-                value: 1,
-                unit: "months"
-                }
-            }
+        const timeSlider = new TimeSlider({
+          container: timeSliderRef.current,
+          view: mapView,
+          mode:"time-window",
+          fullTimeExtent: { // entire extent of the timeSlider
+            start: new Date(2015, 7, 28),
+            end: new Date(2018, 9, 28)
+          },
+          values:[ // location of timeSlider thumbs
+            new Date(2015, 7, 28),
+            new Date(2018, 9, 28)
+          ]
         });
 
-        const layers = definitions.map(function(definition){
-            return [new FeatureLayer()];
-          });
+        mapView.ui.add(timeSliderRef.current, "manual");
 
-        // get layerviews of each fire layers once the layers are loaded
-        const layerViewsEachAlways = function getLayerViews () {
-            return promiseUtils.eachAlways(layers.map(function(layer: typeof FeatureLayer){
-                
-             return view.whenLayerView(layer);
-            }));
-          }
-        // update the fire stats between 2014 - 2018 once timeExtent of
-          // the timeSlider changes
-          timeSlider.watch("timeExtent", function(){
-            //updateFiresStats();
-          });
+        timeSlider.watch("timeExtent", function(){
+          const start:Date = new Date(timeSlider.timeExtent.start);
+          const end:Date = new Date(timeSlider.timeExtent.end);
           
-          // query five layerviews representing fires between 2014-2018
-        // this will be called from the UudateFiresStats function
-        const queryFeaturesForStats = function getQueryResults (layerViewsResults: typeof FeatureLayer[] ) {
-            return promiseUtils.eachAlways(layerViewsResults.map(function(result){
-              // If a Promise was rejected, you can check for the rejected error
-              if (result.error) {
-                return promiseUtils.resolve(result.error);
-              }
-              // The results of the Promise are returned in the value property
-              else {
-                const layerView = result.value;
-  
-                // set the timeExtent for the stats query object. But
-                // we need to offset the timeExtent for each layer by
-                // number of years specified in the layer.timeOffset
-                let start = new Date(timeSlider.timeExtent.start);
-                let end = new Date(timeSlider.timeExtent.end);
-                start.setFullYear(start.getFullYear() - layerView.layer.timeOffset.value);
-                end.setFullYear(end.getFullYear() - layerView.layer.timeOffset.value);
-  
-                // now we have the right timeExtent for each layer
-                // set the timeExtent for the stats query
-                statQuery.timeExtent = {
-                  start: start,
-                  end: end
-                };
-                // query the layerviews for the stats
-                return layerView.queryFeatures(statQuery).then(
-                  function(response:IFeatureSet) {
-                    return response.features[0].attributes;
-                  },
-                  function(e:any) {
-                    return promiseUtils.resolve(e);
-                  }
-                );
-              }
-            }));
-          }
+          const query: QueryParam = {layerView:layerService, startDate:start, endDate:end}
+          updateFeaturesOnMapViewState(query);
+        });
 
-
+        
       });
-      }
+    }
+     
+    const updateFeaturesOnMapViewState = ({layerView, startDate, endDate}: QueryParam) => {
       
-      
+      let start = (startDate.getMonth()+1) + "/" + (startDate.getDate()+1) + "/" + startDate.getFullYear(); 
+      let end = (endDate.getMonth()+1) + "/" + (endDate.getDate()+1) + "/" + endDate.getFullYear(); 
+      let whereString = "where createdDate >= " + start + " and createdDate <= " + end;
+      layerView.queryFeatures({outFields: layerView.availableFields, where:whereString}).then(function(results){
 
+        console.log(results.features.length, " features returned");
+
+      }).catch(function(error){
+        console.log("query failed: ", error)
+      }); 
+
+          
+          
+      
+    }
+
+    React.useEffect(() => {
+      if(mapView && layerService)
+        initTimeSliderView();
+    }, [mapView]);
+      
+    
 
     return(
     <>
+      <div ref={timeSliderRef} 
+      style={{
+        'position': 'absolute',
+        'width':'100%',
+        'bottom':'0'
+
+      }}>
+
+      </div>
     </>);
 
 }

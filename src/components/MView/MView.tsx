@@ -1,7 +1,9 @@
 import React from 'react';
 import {loadModules, loadCss} from 'esri-loader';
 import IFeatureLayer from 'esri/layers/FeatureLayer';
+import IFeatureLayerView from 'esri/views/layers/FeatureLayerView';
 import IMapView from 'esri/views/MapView';
+import TimeSlider from '../TimeSlider/TimeSlider';
 
 interface Props {
   children?:React.ReactNode;
@@ -11,12 +13,12 @@ const MView:React.FC<Props> = ({
   children
 }:Props) =>{
 
-  const [isMapView, setIsMapView] = React.useState<boolean>(false);
   const [mapView, setMapView] = React.useState<IMapView>(null);
-  const [layerServices, setLayerServices] = React.useState<IFeatureLayer[]>()
+  const [featureLayers, setFeatureLayers] = React.useState<IFeatureLayer[]>();
+  const [featureService, setFeatureService] = React.useState<IFeatureLayerView>();
   const mapViewRef = React.useRef<HTMLDivElement>();
   
-
+  let layerServices:()=>IFeatureLayerView = null;
   const serverUrl =[
     "https://gis1imcloud1.amec.com/arcgis/rest/services/6466/Caltrans/MapServer/3",
     "https://gis1imcloud1.amec.com/arcgis/rest/services/6466/Caltrans/FeatureServer/8"
@@ -41,7 +43,8 @@ const MView:React.FC<Props> = ({
         'esri/form/elements/FieldElement',
         'esri/form/FormTemplate',
         'esri/views/layers/FeatureLayerView',
-        'esri/tasks/support/FeatureSet'
+        'esri/tasks/support/FeatureSet',
+        "esri/core/promiseUtils",
       ], {css:true}).then(([
           MapView, 
           Map, 
@@ -50,7 +53,8 @@ const MView:React.FC<Props> = ({
           FieldElement, 
           FormTemplate, 
           FeatureLayerView,
-          FeatureSet
+          FeatureSet,
+          PromiseUtils 
         ]) => {
 
         try{
@@ -73,9 +77,9 @@ const MView:React.FC<Props> = ({
             zoom: 7
             });
   
-          const featureLayers: typeof FeatureLayer[] = [];
+          const featureLayers: typeof FeatureLayerView[] = [];
           for(let i = 0; layerUrls.length > i; i++){
-            featureLayers[i] = new FeatureLayer({
+            const featureLayer = new FeatureLayer({
                 //url: "https://gis1imcloud1.amec.com:6443/arcgis/rest/services/6466/LD_Athens/FeatureServer/" + i,
                 url:layerUrls[i],
                 id: i,
@@ -114,29 +118,29 @@ const MView:React.FC<Props> = ({
             
             });
 
-            map.add(featureLayers[i]);
+            map.add(featureLayer);
             
-            view.whenLayerView(featureLayers[i]).then(function(layerView: typeof FeatureLayerView){
+            featureLayers.push(featureLayer);
+            if(i == 1){
+              view.whenLayerView(featureLayer).then(function(resultView:IFeatureLayerView){
+                setFeatureService(resultView);
+              }).catch(function(){
 
-              layerView.queryFeatures({
-                  geometry: view.extent,
-                  returnGeometry: true
-                }).then(function(results:typeof FeatureSet){
-                  const graphics = results.featires[0];
-                });
-              // layerView.watch("updating", function(){
-                
-              //   
-              // });
-            });
-
+              })
+            }
+            
             
           
           }
+          // layerServices = function getLayerViews () {
+          //   return PromiseUtils.eachAlways(featureLayers.map(function(layer){
+          //    return view.whenLayerView(layer);
+          //   }));
+          //}
           
           view.when(() => {
             setMapView(view);
-            setLayerServices(featureLayers);
+            
           });
 
           
@@ -171,13 +175,14 @@ const MView:React.FC<Props> = ({
       }}>
 
       </div>
-      {
+      {<TimeSlider mapView={mapView} layerService={featureService}/>}
+      {/* {
         React.Children.map(children, (child) => {
           return React.cloneElement(child as React.ReactElement<any>, {
-            mapView, layerServices
+            mapView, setFeatureService
           });
         })
-      }
+      } */}
     </>);
 };
 
