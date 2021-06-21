@@ -14,11 +14,10 @@ const MView:React.FC<Props> = ({
 }:Props) =>{
 
   const [mapView, setMapView] = React.useState<IMapView>(null);
-  const [featureLayers, setFeatureLayers] = React.useState<IFeatureLayer[]>();
-  const [featureService, setFeatureService] = React.useState<IFeatureLayerView>();
+  const [featureLayers, setFeatureLayers] = React.useState<IFeatureLayer[]>(null);
+  const [featureService, setFeatureService] = React.useState<IFeatureLayerView>(null);
   const mapViewRef = React.useRef<HTMLDivElement>();
   
-  let layerServices:()=>IFeatureLayerView = null;
   const serverUrl =[
     "https://gis1imcloud1.amec.com/arcgis/rest/services/6466/Caltrans/MapServer/3",
     "https://gis1imcloud1.amec.com/arcgis/rest/services/6466/Caltrans/FeatureServer/8"
@@ -77,9 +76,9 @@ const MView:React.FC<Props> = ({
             zoom: 7
             });
   
-          const featureLayers: typeof FeatureLayerView[] = [];
+          const layers: typeof FeatureLayer[] = [];
           for(let i = 0; layerUrls.length > i; i++){
-            const featureLayer = new FeatureLayer({
+            const layer = new FeatureLayer({
                 //url: "https://gis1imcloud1.amec.com:6443/arcgis/rest/services/6466/LD_Athens/FeatureServer/" + i,
                 url:layerUrls[i],
                 id: i,
@@ -118,11 +117,11 @@ const MView:React.FC<Props> = ({
             
             });
 
-            map.add(featureLayer);
+            map.add(layer);
             
-            featureLayers.push(featureLayer);
+            layers.push(layer);
             if(i == 1){
-              view.whenLayerView(featureLayer).then(function(resultView:IFeatureLayerView){
+              view.whenLayerView(layer).then(function(resultView:IFeatureLayerView){
                 setFeatureService(resultView);
               }).catch(function(){
 
@@ -143,19 +142,31 @@ const MView:React.FC<Props> = ({
             
           });
 
-          
+          setFeatureLayers(layers);
 
         }catch(err){
           console.error(err);
         }
         
-        const createData = () => {
-
-        }
+        
         
       });
   };
-  
+
+  const shouldShowTimeSlider = () : boolean => {
+    return mapView !== null && featureLayers !== null && featureService !== null;
+  }
+
+  const TimeSliderWidget = () => {
+    if(mapView ==null || featureLayers == null || featureService == null)
+    {
+      return null;
+    }
+
+    return (
+      <TimeSlider mapView={mapView} layerService={featureService}/>
+    )
+  }
   React.useEffect(() => {
     initMapView();
     
@@ -175,14 +186,8 @@ const MView:React.FC<Props> = ({
       }}>
 
       </div>
-      {<TimeSlider mapView={mapView} layerService={featureService}/>}
-      {/* {
-        React.Children.map(children, (child) => {
-          return React.cloneElement(child as React.ReactElement<any>, {
-            mapView, setFeatureService
-          });
-        })
-      } */}
+      
+      {TimeSliderWidget()}
     </>);
 };
 

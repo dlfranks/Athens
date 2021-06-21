@@ -60,11 +60,11 @@ export default function TimeSliderView ({mapView = null, layerService}:Props){
      
     const updateFeaturesOnMapViewState = ({layerView, startDate, endDate}: QueryParam) => {
       
-      let start = (startDate.getMonth()+1) + "/" + (startDate.getDate()+1) + "/" + startDate.getFullYear(); 
-      let end = (endDate.getMonth()+1) + "/" + (endDate.getDate()+1) + "/" + endDate.getFullYear(); 
-      let whereString = "where createdDate >= " + start + " and createdDate <= " + end;
-      layerView.queryFeatures({outFields: layerView.availableFields, where:whereString}).then(function(results){
-
+      let start = startDate.getFullYear() + "-" + (startDate.getMonth()+1) + "-" + (startDate.getDate()+1); 
+      let end = endDate.getFullYear() + "-" + (endDate.getMonth()+1) + "-" + (endDate.getDate()+1); 
+      let whereString = "where Date_Created >= DATE '" + start + "' and Date_Created <= DATE '" + end + "'";
+      layerView.queryFeatures({where:whereString, outFields:layerView.availableFields}).then(function(results){
+        let graphics = results.features;
         console.log(results.features.length, " features returned");
 
       }).catch(function(error){
