@@ -2,21 +2,48 @@ import React from 'react';
 import {loadModules, loadCss} from 'esri-loader';
 import IFeatureLayer from 'esri/layers/FeatureLayer';
 import IFeatureLayerView from 'esri/views/layers/FeatureLayerView';
+import IFeatureSet from 'esri/tasks/support/FeatureSet';
 import IMapView from 'esri/views/MapView';
 import TimeSlider from '../TimeSlider/TimeSlider';
+import { convertDateFormatToIntlOptions } from 'esri/intl';
+import SelectedBy, {ISelectedSet} from '../SelectedBy/SelectedBy';
 
-interface Props {
+export const queryName = "Status";
+export interface IQueryParam {
+  layerView: IFeatureLayerView;
+  startDate: Date;
+  endDate: Date;
+  columnName: string;
+  columnValue: string;
+}
+
+export interface ITimeSliderDates{
+  start?:Date;
+  end?: Date;
+}
+
+const TimeSliderDates: ITimeSliderDates = {
+  start:new Date(2015, 6, 28),
+  end:new Date(2018, 8, 28)
+}
+interface IProps {
   children?:React.ReactNode;
 }
 
-const MView:React.FC<Props> = ({
+const MView:React.FC<IProps> = ({
   children
-}:Props) =>{
+}:IProps) =>{
 
   const [mapView, setMapView] = React.useState<IMapView>(null);
   const [featureLayers, setFeatureLayers] = React.useState<IFeatureLayer[]>(null);
-  const [featureService, setFeatureService] = React.useState<IFeatureLayerView>(null);
+  const [featureService, setFeatureService] = React.useState<IFeatureLayerView>();
+  const [selectedSet, setSelectedSet] = React.useState<ISelectedSet>({name:queryName, value:"all"});
+  //const [optionItems, setOptionItems] = React.useState<string[]>();
+  const [countFeatures, setCountFeatures] = React.useState<number>();
+  const [timeSliderDates, setTimeSliderDates] = React.useState<ITimeSliderDates>(TimeSliderDates);
+  const [selectedOptionData, setSelectedOptionData] = React.useState<string[]>([]);
   const mapViewRef = React.useRef<HTMLDivElement>();
+  
   
   const serverUrl =[
     "https://gis1imcloud1.amec.com/arcgis/rest/services/6466/Caltrans/MapServer/3",
@@ -122,9 +149,12 @@ const MView:React.FC<Props> = ({
             layers.push(layer);
             if(i == 1){
               view.whenLayerView(layer).then(function(resultView:IFeatureLayerView){
+                
                 setFeatureService(resultView);
-              }).catch(function(){
-
+                
+                
+              }).catch(function(err:any){
+                console.log(`Feature Service Error: ${err}`)
               })
             }
             
@@ -153,24 +183,137 @@ const MView:React.FC<Props> = ({
       });
   };
 
-  const shouldShowTimeSlider = () : boolean => {
-    return mapView !== null && featureLayers !== null && featureService !== null;
-  }
-
+  
   const TimeSliderWidget = () => {
-    if(mapView ==null || featureLayers == null || featureService == null)
+    if(mapView ==null || featureLayers == null || featureService == null || selectedOptionData.length < 1)
     {
       return null;
     }
 
     return (
-      <TimeSlider mapView={mapView} layerService={featureService}/>
+      
+      <>
+        <TimeSlider 
+          mapView={mapView} 
+          layerService={featureService} 
+          selectedSet={selectedSet} 
+          mapViewControl = {mapViewControl}
+          setTimeSliderDates = {setTimeSliderDates}
+          />
+          <SelectedBy
+          onChange ={changeSelect}
+          options = {selectedOptionData}
+          onClickCount = {clickCount}
+          selectedValue = {selectedSet}
+          countFeatures = {countFeatures}
+          />
+        </>
     )
   }
+
+  const createOptions = () => {
+    //const query = featureService.createQuery();
+    const queryString = createWhere();
+    //query.where = queryString;
+    const uniqueValues:string[] =['all'];
+    const query = featureLayers[1].createQuery();
+    query.where = queryString;
+    featureLayers[1].queryFeatures(query).then((response) =>{
+      let features = response.features;
+      let statusItems = features.map((f) => {
+        return f.attributes.Status;
+      });
+
+      statusItems.forEach((item) => {
+        
+        if((uniqueValues.length < 1 || uniqueValues.indexOf(item) === -1) && item != ""){
+          uniqueValues.push(item);
+        }
+      });
+       if(uniqueValues.length > 0){
+         setSelectedSet({name:queryName, value:uniqueValues[0]});
+       }
+       setSelectedOptionData(uniqueValues);
+
+      
+      
+
+    });
+
+    
+  }
+
+  const attachZero = (n:number):string => {
+    return n < 10? ("0" + n) : n.toString();
+  } 
+  const createWhere = ():string => {
+    let whereString="";
+    let start = timeSliderDates.start.getFullYear() + "-" + attachZero(timeSliderDates.start.getMonth()+1) + "-" + attachZero(timeSliderDates.start.getDate()+1); 
+    let end = timeSliderDates.end.getFullYear() + "-" + attachZero(timeSliderDates.end.getMonth()+1) + "-" + attachZero(timeSliderDates.end.getDate()+1); 
+    if(selectedSet.value === 'all'){
+      whereString = `Date_Created >= DATE '${start}' and Date_Created <= DATE '${end}'`;
+    }else{
+      whereString = `Date_Created >= DATE '${start}' and Date_Created <= DATE '${end}' and ${selectedSet.name} = '${selectedSet.value}'`;
+    }
+    
+    return whereString;
+  }
+  
+  const layerViewQueryFeature = (whereString:string): Promise<IFeatureSet>=> {
+    const query = featureService.createQuery();
+    query.where = whereString;
+    query.outFields = featureService.availableFields;
+    return featureService.queryFeatures(query);
+  }
+  const mapViewControl = ():void => {
+
+    const whereString = createWhere();
+    layerViewQueryFeature(whereString).then(function(results){
+        //let graphics = results.features;
+        featureService.layer.definitionExpression = whereString;
+        
+      }).catch(function(error){
+        console.log("query failed: ", error)
+      }); 
+
+  }
+  const changeSelect = (selectedValue : string) => {
+    setSelectedSet({...selectedSet, value:selectedValue})
+    let query:IQueryParam = {
+      layerView: featureService, 
+      startDate: timeSliderDates.start,
+      endDate: timeSliderDates.end,
+      columnName: selectedSet.name,
+      columnValue: selectedSet.value
+    }
+    mapViewControl();
+  }
+
+  const clickCount = async () => {
+    if(!featureService && !selectedSet && !timeSliderDates){
+      setCountFeatures(0);
+    
+    }
+
+    const whereString = createWhere()
+
+    layerViewQueryFeature(whereString).then((results) => {
+      setCountFeatures(results.features.length);
+    });
+  }
+
   React.useEffect(() => {
     initMapView();
     
   }, []);
+
+  React.useEffect(() => {
+    if(featureLayers && featureLayers.length > 1)
+      createOptions();
+    
+  }, [featureLayers]);
+
+  
 
   return (
     <>
