@@ -195,9 +195,7 @@ const MView:React.FC<IProps> = ({
       <>
         <TimeSlider 
           mapView={mapView} 
-          layerService={featureService} 
-          selectedSet={selectedSet} 
-          mapViewControl = {mapViewControl}
+          timeExtendDates={timeSliderDates} 
           setTimeSliderDates = {setTimeSliderDates}
           />
           <SelectedBy
@@ -212,9 +210,7 @@ const MView:React.FC<IProps> = ({
   }
 
   const createOptions = () => {
-    //const query = featureService.createQuery();
     const queryString = createWhere();
-    //query.where = queryString;
     const uniqueValues:string[] =['all'];
     const query = featureLayers[1].createQuery();
     query.where = queryString;
@@ -268,14 +264,8 @@ const MView:React.FC<IProps> = ({
   const mapViewControl = ():void => {
 
     const whereString = createWhere();
-    layerViewQueryFeature(whereString).then(function(results){
-        //let graphics = results.features;
-        featureService.layer.definitionExpression = whereString;
-        
-      }).catch(function(error){
-        console.log("query failed: ", error)
-      }); 
-
+    featureService.layer.definitionExpression = whereString;
+    
   }
   const changeSelect = (selectedValue : string) => {
     setSelectedSet({...selectedSet, value:selectedValue})
@@ -286,10 +276,10 @@ const MView:React.FC<IProps> = ({
       columnName: selectedSet.name,
       columnValue: selectedSet.value
     }
-    mapViewControl();
+    //mapViewControl();
   }
 
-  const clickCount = async () => {
+  const clickCount = () => {
     if(!featureService && !selectedSet && !timeSliderDates){
       setCountFeatures(0);
     
@@ -312,6 +302,12 @@ const MView:React.FC<IProps> = ({
       createOptions();
     
   }, [featureLayers]);
+
+  React.useEffect(() => {
+    if(featureService && timeSliderDates && selectedSet)
+      mapViewControl();
+    
+  }, [timeSliderDates, selectedSet]);
 
   
 

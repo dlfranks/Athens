@@ -12,13 +12,11 @@ import {ISelectedSet} from '../SelectedBy/SelectedBy';
  
 interface IProps {
     mapView?:IMapView;
-    layerService?: IFeatureLayerView;
-    selectedSet: ISelectedSet;
-    mapViewControl: () => void;
+    timeExtendDates: ITimeSliderDates;
     setTimeSliderDates: (sliderDates:ITimeSliderDates) => void;
 }
 
-export default function TimeSliderView ({mapView = null, layerService, mapViewControl, selectedSet, setTimeSliderDates}:IProps){
+export default function TimeSliderView ({mapView = null, timeExtendDates, setTimeSliderDates}:IProps){
 
   const timeSliderRef = React.useRef<HTMLDivElement>();
 
@@ -51,21 +49,21 @@ export default function TimeSliderView ({mapView = null, layerService, mapViewCo
             }
           },
           values:[
-            new Date(2015, 6, 28),
-            new Date(2017, 8, 28)
+            timeExtendDates.start,
+            timeExtendDates.end
           ]
         });
         
-        setTimeSliderDates(timeSlider.timeExtent);
+        //setTimeSliderDates(timeSlider.timeExtent);
         mapView.ui.add(timeSliderRef.current, "manual");
 
         timeSlider.watch("timeExtent", function(timeExtent: typeof TimeExtent){
-          const start:Date = new Date(timeExtent.start);
-          const end:Date = new Date(timeExtent.end);
+          let start:Date = new Date(timeExtent.start);
+          let end:Date = new Date(timeExtent.end);
           
-          setTimeSliderDates({start:start, end: end});
+          setTimeSliderDates({...timeExtendDates, start:start, end: end});
           
-          mapViewControl();
+          //mapViewControl();
         });
 
         
@@ -73,7 +71,7 @@ export default function TimeSliderView ({mapView = null, layerService, mapViewCo
     }
     
     React.useEffect(() => {
-      if(mapView && layerService)
+      
         initTimeSliderView();
     }, []);
       

@@ -1,5 +1,7 @@
 import React from 'react';
 import Select from 'calcite-react/Select';
+import Button, { ButtonGroup } from 'calcite-react/Button';
+import Modal from 'calcite-react/Modal'
 import {MenuItem} from 'calcite-react/Menu';
 import styled from 'styled-components';
 
@@ -17,41 +19,40 @@ interface IProps {
 }
 
 const StyledSelect = styled(Select)`
-    position:absolute;
-    top:10px;
-    right:60px;
+    position:relative;
+    top:20px;
+    left:20px;
     width:200px;
     background-color: #fff;
     color: #000;
-    z-index: 5;
+    
     
 `;
+
+
 const SelectedBy = ({onChange, options, onClickCount, selectedValue, countFeatures}:IProps) => {
 
     const selectRef = React.useRef<HTMLSelectElement>();
 
-    const countDivRef = React.useRef<HTMLDivElement>();
+    const panelDivRef = React.useRef<HTMLDivElement>();
+    const countSpanRef = React.useRef<HTMLSpanElement>();
     let optionItems: typeof MenuItem[] = [];
     
-
-    const init = () => {
-        
-        
-
-    }
-
-    
-
-    React.useEffect(() =>{
-        
-        init();
-    }, []);
-
     return (
         
-        <div>
+        <div ref={panelDivRef}
+            style={{
+                'position': 'relative',
+                'width': '300px',
+                'height': '170px',
+                'top': '30px',
+                'right': '30px',
+                'background': '#fff',
+                'float':'right'
+            }}
+        >
             <StyledSelect onChange={onChange}
-                    selectedValue={selectedValue}
+                    selectedValue={selectedValue.value}
             >
                 {
                     options.map((value) => {
@@ -65,13 +66,22 @@ const SelectedBy = ({onChange, options, onClickCount, selectedValue, countFeatur
                     })
                 }
             </StyledSelect>
-            <div>
-                <button onChange={onClickCount}></button>
-            </div>
-            <div>
-                {}
-            </div>
-        </div>
+            <Button onClick={onClickCount}
+                style={{
+                    'position': 'relative',
+                    'top':'70px',
+                    'left': '20px',
+
+                }}
+            >Total Cocunt</Button>
+            <span ref={countSpanRef}
+                style={{
+                    'position': 'relative',
+                    'top':'70px',
+                    'left': '100px',
+                }}
+            >{countFeatures}</span>
+        </div>    
     )
 }
 
