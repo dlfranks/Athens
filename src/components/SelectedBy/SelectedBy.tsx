@@ -4,6 +4,7 @@ import Button, { ButtonGroup } from 'calcite-react/Button';
 import Modal from 'calcite-react/Modal'
 import {MenuItem} from 'calcite-react/Menu';
 import styled from 'styled-components';
+import BarChart from '../BarChart/BarChart';
 
 export interface ISelectedSet{
     name: string;
@@ -43,8 +44,8 @@ const SelectedBy = ({onChange, options, onClickCount, selectedValue, countFeatur
         <div ref={panelDivRef}
             style={{
                 'position': 'relative',
-                'width': '300px',
-                'height': '170px',
+                'width': '400px',
+                'height': '600px',
                 'top': '30px',
                 'right': '30px',
                 'background': '#fff',
@@ -73,7 +74,7 @@ const SelectedBy = ({onChange, options, onClickCount, selectedValue, countFeatur
                     'left': '20px',
 
                 }}
-            >Total Cocunt</Button>
+            >Total Count</Button>
             <span ref={countSpanRef}
                 style={{
                     'position': 'relative',
@@ -81,6 +82,7 @@ const SelectedBy = ({onChange, options, onClickCount, selectedValue, countFeatur
                     'left': '100px',
                 }}
             >{countFeatures}</span>
+            <BarChart width={200} height={400}/>
         </div>    
     )
 }
