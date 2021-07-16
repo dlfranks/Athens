@@ -1,16 +1,17 @@
 import React from 'react';
 import { scaleBand, scaleLinear, select, max,  axisLeft, axisBottom} from 'd3';
+import { IDataSet } from '../MView/MView';
 
 
 const width = 400;
 const height = 300;
-const data = [
-    {name:'Phase 1', count: 100},
-    {name:'Phase 2', count: 200},
-    {name:'Phase 3', count: 300},
-    {name:'Phase 4', count: 220}
+// const data = [
+//     {name:'Phase 1', count: 100},
+//     {name:'Phase 2', count: 200},
+//     {name:'Phase 3', count: 300},
+//     {name:'Phase 4', count: 220}
     
-];
+// ];
 
 const dimensions = {
     width: 300,
@@ -23,11 +24,11 @@ const dimensions = {
 interface IProps{
     width: number,
     height: number,
-    
+    data:IDataSet[]
 }
 
 
-const BarChart:React.FC<IProps> = ({width, height}: IProps) => {
+const BarChart:React.FC<IProps> = ({width, height, data}: IProps) => {
     
     const barChartRef = React.useRef<SVGSVGElement>();
     

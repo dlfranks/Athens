@@ -5,6 +5,7 @@ import Modal from 'calcite-react/Modal'
 import {MenuItem} from 'calcite-react/Menu';
 import styled from 'styled-components';
 import BarChart from '../BarChart/BarChart';
+import { IDataSet } from '../MView/MView';
 
 export interface ISelectedSet{
     name: string;
@@ -17,6 +18,7 @@ interface IProps {
     onClickCount: () => void;
     selectedValue: ISelectedSet;
     countFeatures:number;
+    barData:IDataSet[];
 }
 
 const StyledSelect = styled(Select)`
@@ -31,7 +33,7 @@ const StyledSelect = styled(Select)`
 `;
 
 
-const SelectedBy = ({onChange, options, onClickCount, selectedValue, countFeatures}:IProps) => {
+const SelectedBy = ({onChange, options, onClickCount, selectedValue, countFeatures, barData}:IProps) => {
 
     const selectRef = React.useRef<HTMLSelectElement>();
 
@@ -82,7 +84,7 @@ const SelectedBy = ({onChange, options, onClickCount, selectedValue, countFeatur
                     'left': '100px',
                 }}
             >{countFeatures}</span>
-            <BarChart width={200} height={400}/>
+            <BarChart data={barData} width={200} height={400}/>
         </div>    
     )
 }

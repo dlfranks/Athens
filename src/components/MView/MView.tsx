@@ -21,7 +21,10 @@ export interface ITimeSliderDates{
   start?:Date;
   end?: Date;
 }
-
+export interface IDataSet{
+  name:string;
+  count:number;
+}
 const TimeSliderDates: ITimeSliderDates = {
   start:new Date(2015, 6, 28),
   end:new Date(2018, 8, 28)
@@ -38,7 +41,7 @@ const MView:React.FC<IProps> = ({
   const [featureLayers, setFeatureLayers] = React.useState<IFeatureLayer[]>(null);
   const [featureService, setFeatureService] = React.useState<IFeatureLayerView>();
   const [selectedSet, setSelectedSet] = React.useState<ISelectedSet>({name:queryName, value:"all"});
-  //const [optionItems, setOptionItems] = React.useState<string[]>();
+  const [barDataSet, setBarDataSet] = React.useState<IDataSet[]>();
   const [countFeatures, setCountFeatures] = React.useState<number>();
   const [timeSliderDates, setTimeSliderDates] = React.useState<ITimeSliderDates>(TimeSliderDates);
   const [selectedOptionData, setSelectedOptionData] = React.useState<string[]>([]);
@@ -204,10 +207,33 @@ const MView:React.FC<IProps> = ({
           onClickCount = {clickCount}
           selectedValue = {selectedSet}
           countFeatures = {countFeatures}
+          barData = {barDataSet}
           />
         </>
     )
   }
+
+  const createBarChartData = () => {
+    
+    const years = ['2015', '2016', '2017', '2018'];
+    const whereString = createWhere();
+    const query = featureService.createQuery();
+    query.where = whereString;
+    const dataSet:IDataSet[] = [];
+    
+    featureService.queryFeatures(query).then((results) => {
+      const features = results.features;
+      for(let i = 0; i < years.length; i++){
+        let startDate
+        let filtered = features.filter(g => {
+          return g.attributes.Date_Created.getYear() == years[i];
+        });
+        let data = {name:years[i], count: filtered? 0 : filtered.length}
+        dataSet.push(data);
+      }
+      
+    });
+  };
 
   const createOptions = () => {
     const queryString = createWhere();
@@ -269,13 +295,7 @@ const MView:React.FC<IProps> = ({
   }
   const changeSelect = (selectedValue : string) => {
     setSelectedSet({...selectedSet, value:selectedValue})
-    let query:IQueryParam = {
-      layerView: featureService, 
-      startDate: timeSliderDates.start,
-      endDate: timeSliderDates.end,
-      columnName: selectedSet.name,
-      columnValue: selectedSet.value
-    }
+    
     //mapViewControl();
   }
 
