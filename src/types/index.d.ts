@@ -1,0 +1,1 @@
+export type UpdateLayerName = 'Fuel Storage Operations' | 'ICEngine' | 'ODS' | 'Boiler Heating Unit' | 'Misc' | 'Inspections';
