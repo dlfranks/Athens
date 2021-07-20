@@ -4,9 +4,8 @@ import IMapView from 'esri/views/MapView';
 import IFeatureSet from 'esri/tasks/support/FeatureSet'
 import IFeatureLayer from 'esri/layers/FeatureLayer';
 import IFeatureLayerView from 'esri/views/layers/FeatureLayerView';
-import {IQueryParam, ITimeSliderDates, queryName} from '../MView/MView';
 import {ISelectedSet} from '../SelectedBy/SelectedBy';
-
+import {ITimeSliderDates} from '../MView/MView';
 
 
  
@@ -38,8 +37,8 @@ export default function TimeSliderView ({mapView = null, timeExtendDates, setTim
           view: mapView,
           mode:"time-window",
           fullTimeExtent: { // entire extent of the timeSlider
-            start: new Date(2015, 6, 28),
-            end: new Date(2018, 8, 28)
+            start: new Date(2014, 10, 20),
+            end: new Date(2021, 7, 19)
           },
           playRate:2000,
           stops:{
@@ -71,8 +70,8 @@ export default function TimeSliderView ({mapView = null, timeExtendDates, setTim
     }
     
     React.useEffect(() => {
-      
-        initTimeSliderView();
+      initTimeSliderView();
+        
     }, []);
       
     

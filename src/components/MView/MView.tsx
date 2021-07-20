@@ -35,12 +35,12 @@ interface ILayerUrl{
   id:string;
   url:string;
 }
-const updateLayers = ['Fuel Storage Operations','ICEngine', 'ODS', 'Boiler Heating Unit', 'Misc', 'Inspections']
-
+const updateLayerNames = ['Fuel Storage Operations', 'ICEngine', 'ODS', 'Boiler Heating Unit', 'Misc'];
+const selectionOptions = ['All'].concat(updateLayerNames);
 
 const TimeSliderDates: ITimeSliderDates = {
-  start:new Date(2015, 6, 28),
-  end:new Date(2018, 8, 28)
+  start:new Date(2014, 10, 20),
+  end:new Date(2021, 7, 19)
 }
 interface IProps {
   children?:React.ReactNode;
@@ -52,11 +52,10 @@ const MView:React.FC<IProps> = ({
 
   const [mapView, setMapView] = React.useState<IMapView>(null);
   const [featureServices, setFeatureServices] = React.useState<FeatureServiceInfo>(null);
-  const [selectedSet, setSelectedSet] = React.useState<ISelectedSet>({name:queryName, value:"all"});
+  const [selectedSet, setSelectedSet] = React.useState<string>(selectionOptions[0]);
   const [barDataSet, setBarDataSet] = React.useState<IDataSet[]>();
   const [countFeatures, setCountFeatures] = React.useState<number>();
   const [timeSliderDates, setTimeSliderDates] = React.useState<ITimeSliderDates>(TimeSliderDates);
-  const [selectedOptionData, setSelectedOptionData] = React.useState<string[]>([]);
   const mapViewRef = React.useRef<HTMLDivElement>();
   
   
@@ -102,40 +101,25 @@ const MView:React.FC<IProps> = ({
       },
     ];
 
-    
-
-    // for(let i = 0; i < layerCount; i++){
-    //     layerUrls.push(baseUrl + i);
-    // }
-
   
   const initMapView = async() => {
     
-    // type Modules = [typeof IMapView, typeof IMap, typeof IFeatureLayer, typeof IExtent, typeof IPromiseUtils];
+    type Modules = [typeof IMapView, typeof IMap, typeof IFeatureLayer, typeof IExtent, typeof IPromiseUtils];
       
-    // const [
-    //   MapView, 
-    //   Map, 
-    //   FeatureLayer, 
-    //   Extent, 
-    //   promiseUtils 
-    // ] = await (loadModules([
-    //   'esri/views/MapView',
-    //   'esri/Map',
-    //   'esri/layers/FeatureLayer',
-    //   'esri/geometry/Extent',
-    //   "esri/core/promiseUtils",
-    // ]) as Promise<Modules>);
-    loadModules(['esri/views/MapView',
-       'esri/Map',
-       'esri/layers/FeatureLayer',
+    const [
+      MapView, 
+      Map, 
+      FeatureLayer, 
+      Extent, 
+      promiseUtils 
+    ] = await (loadModules([
+      'esri/views/MapView',
+      'esri/Map',
+      'esri/layers/FeatureLayer',
       'esri/geometry/Extent',
       "esri/core/promiseUtils",
-        ]).then(([MapView, 
-          Map, 
-          FeatureLayer,
-          Extent, 
-          promiseUtils ]) => {
+    ], {css:true}) as Promise<Modules>);
+    
     try{
 
       const map = new Map({
@@ -159,7 +143,7 @@ const MView:React.FC<IProps> = ({
 
       view.when(() => {
           setMapView(view);
-          
+       
       });
 
       const layers: FeatureService[] = [];
@@ -183,12 +167,14 @@ const MView:React.FC<IProps> = ({
           layers.push(service);
           return service;
         });
-      })).then((result:any) => {
+      })).then((results:any) => {
         const obj: FeatureServiceInfo = {};
-        // result.map((layer:FeatureService) => {
-        //   obj[layer.name] = layer;
-        // });
-        // setFeatureServices(obj);
+        results.map((result:any) => {
+          var layer = result.value;
+          obj[layer.name] = layer;
+        });
+        setFeatureServices(obj);
+        
       });
       
     }catch(err){
@@ -197,16 +183,14 @@ const MView:React.FC<IProps> = ({
 
     }
 
-  }); //loadmodules
+ 
     
   }
         
-
-          
-
+  
   
   const TimeSliderWidget = () => {
-    if(mapView ==null || featureServices == null || selectedOptionData.length < 1)
+    if(mapView ==null || featureServices == null)
     {
       return null;
     }
@@ -220,14 +204,14 @@ const MView:React.FC<IProps> = ({
           timeExtendDates={timeSliderDates} 
           setTimeSliderDates = {setTimeSliderDates}
           />
-          {/* <SelectedBy
+          <SelectedBy
           onChange ={changeSelect}
-          options = {selectedOptionData}
+          options = {selectionOptions}
           onClickCount = {clickCount}
           selectedValue = {selectedSet}
           countFeatures = {countFeatures}
           barData = {barDataSet}
-          /> */}
+          />
         </>
     )
   }
@@ -254,86 +238,68 @@ const MView:React.FC<IProps> = ({
   //   });
   //};
 
-  // const createOptions = () => {
-  //   const queryString = createWhere();
-  //   const uniqueValues:string[] =['all'];
-  //   const query = featureLayers[1].createQuery();
-  //   query.where = queryString;
-  //   featureLayers[1].queryFeatures(query).then((response) =>{
-  //     let features = response.features;
-  //     let statusItems = features.map((f) => {
-  //       return f.attributes.Status;
-  //     });
-
-  //     statusItems.forEach((item) => {
-        
-  //       if((uniqueValues.length < 1 || uniqueValues.indexOf(item) === -1) && item != ""){
-  //         uniqueValues.push(item);
-  //       }
-  //     });
-  //      if(uniqueValues.length > 0){
-  //        setSelectedSet({name:queryName, value:uniqueValues[0]});
-  //      }
-  //      setSelectedOptionData(uniqueValues);
-
-      
-      
-
-  //   });
-
-    
-  // }
-
+  
   const attachZero = (n:number):string => {
     return n < 10? ("0" + n) : n.toString();
   } 
   const createWhere = ():string => {
-    let whereString="";
+    
     let start = timeSliderDates.start.getFullYear() + "-" + attachZero(timeSliderDates.start.getMonth()+1) + "-" + attachZero(timeSliderDates.start.getDate()+1); 
     let end = timeSliderDates.end.getFullYear() + "-" + attachZero(timeSliderDates.end.getMonth()+1) + "-" + attachZero(timeSliderDates.end.getDate()+1); 
-    if(selectedSet.value === 'all'){
-      whereString = `Date_Created >= DATE '${start}' and Date_Created <= DATE '${end}'`;
-    }else{
-      whereString = `Date_Created >= DATE '${start}' and Date_Created <= DATE '${end}' and ${selectedSet.name} = '${selectedSet.value}'`;
-    }
     
-    return whereString;
+    return `Date_Created >= DATE '${start}' and Date_Created <= DATE '${end}'`;
   }
   
-  const layerViewQueryFeature = (layerView:IFeatureLayerView, whereString:string): Promise<IFeatureSet>=> {
-    const query = layerView.createQuery();
+  const layerViewQueryFeature = (serviceName:string, whereString:string): Promise<IFeatureSet>=> {
+    const query = featureServices[serviceName].layerView.createQuery();
     query.where = whereString;
-    query.outFields = layerView.availableFields;
-    return layerView.queryFeatures(query);
+    query.outFields = featureServices[serviceName].layerView.availableFields;
+    return featureServices[serviceName].layerView.queryFeatures(query);
   }
+
   const mapViewControl = ():void => {
 
     const whereString = createWhere();
-    updateLayers.forEach(layer => {
 
-      featureServices[layer].layerView.layer.definitionExpression = whereString;
+    updateLayerNames.forEach(layerName => {
+      
+      layerViewQueryFeature(layerName, whereString).then((response) => {
+        
+      },
+      (e) =>{
+
+      });
     });
+    // if(selectedSet =='All'){
+    //   updateLayerNames.forEach(layer => {
+
+    //     featureServices[layer].layerView.layer.definitionExpression = whereString;
+    //   });
+    // }else{
+    //   featureServices[selectedSet].layerView.layer.definitionExpression = whereString;
+    // }
+    
     
     
   }
   const changeSelect = (selectedValue : string) => {
-    setSelectedSet({...selectedSet, value:selectedValue})
+    setSelectedSet(selectedValue);
     
     //mapViewControl();
   }
 
-  // const clickCount = () => {
-  //   if(!featureService && !selectedSet && !timeSliderDates){
-  //     setCountFeatures(0);
+  const clickCount = () => {
+    if(!featureServices && !selectedSet && !timeSliderDates){
+      setCountFeatures(0);
     
-  //   }
+    }
 
-  //   const whereString = createWhere()
+    const whereString = createWhere()
 
-  //   layerViewQueryFeature(whereString).then((results) => {
-  //     setCountFeatures(results.features.length);
-  //   });
-  // }
+    layerViewQueryFeature(selectedSet, whereString).then((results) => {
+      setCountFeatures(results.features.length);
+    });
+  }
 
   React.useEffect(() => {
     initMapView();
@@ -347,10 +313,10 @@ const MView:React.FC<IProps> = ({
   // }, [featureLayers]);
 
   React.useEffect(() => {
-    if(featureServices && timeSliderDates && selectedSet)
+    if(featureServices)
       mapViewControl();
     
-  }, [timeSliderDates, selectedSet]);
+  }, [timeSliderDates]);
 
   
 

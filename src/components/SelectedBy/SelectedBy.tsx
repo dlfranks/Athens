@@ -16,7 +16,7 @@ interface IProps {
     onChange: (value:string) =>void;
     options: string[];
     onClickCount: () => void;
-    selectedValue: ISelectedSet;
+    selectedValue: string;
     countFeatures:number;
     barData:IDataSet[];
 }
@@ -33,13 +33,19 @@ const StyledSelect = styled(Select)`
 `;
 
 
-const SelectedBy = ({onChange, options, onClickCount, selectedValue, countFeatures, barData}:IProps) => {
-
+const SelectedBy:React.FC<IProps> = ({onChange, options, onClickCount, selectedValue, countFeatures, barData}:IProps) => {
     const selectRef = React.useRef<HTMLSelectElement>();
-
     const panelDivRef = React.useRef<HTMLDivElement>();
     const countSpanRef = React.useRef<HTMLSpanElement>();
-    let optionItems: typeof MenuItem[] = [];
+    const init = () => {
+        
+
+        
+        let optionItems: typeof MenuItem[] = [];
+    }
+    React.useEffect(() => {
+        init();
+    }, []);
     
     return (
         
@@ -55,7 +61,7 @@ const SelectedBy = ({onChange, options, onClickCount, selectedValue, countFeatur
             }}
         >
             <StyledSelect onChange={onChange}
-                    selectedValue={selectedValue.value}
+                    selectedValue={selectedValue}
             >
                 {
                     options.map((value) => {
@@ -84,7 +90,7 @@ const SelectedBy = ({onChange, options, onClickCount, selectedValue, countFeatur
                     'left': '100px',
                 }}
             >{countFeatures}</span>
-            <BarChart data={barData} width={200} height={400}/>
+            {/* <BarChart data={barData} width={200} height={400}/> */}
         </div>    
     )
 }
