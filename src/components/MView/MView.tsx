@@ -7,11 +7,13 @@ import IMap from 'esri/Map';
 import IMapView from 'esri/views/MapView';
 import IExtent from 'esri/geometry/Extent';
 import IPromiseUtils, { resolve } from 'esri/core/promiseUtils';
+import IWatchUtils from 'esri/core/watchUtils';
 import TimeSlider from '../TimeSlider/TimeSlider';
 import { convertDateFormatToIntlOptions } from 'esri/intl';
 import SelectedBy, {ISelectedSet} from '../SelectedBy/SelectedBy';
 import { Module } from 'webpack';
 import {UpdateLayerName} from '../../types/';
+import DirectionsFeatureSet from 'esri/tasks/support/DirectionsFeatureSet';
 
 export const queryName = "Status";
 export type FeatureService ={
@@ -104,20 +106,22 @@ const MView:React.FC<IProps> = ({
   
   const initMapView = async() => {
     
-    type Modules = [typeof IMapView, typeof IMap, typeof IFeatureLayer, typeof IExtent, typeof IPromiseUtils];
+    type Modules = [typeof IMapView, typeof IMap, typeof IFeatureLayer, typeof IExtent, typeof IPromiseUtils, typeof IWatchUtils];
       
     const [
       MapView, 
       Map, 
       FeatureLayer, 
       Extent, 
-      promiseUtils 
+      promiseUtils,
+      watchUtils
     ] = await (loadModules([
       'esri/views/MapView',
       'esri/Map',
       'esri/layers/FeatureLayer',
       'esri/geometry/Extent',
       "esri/core/promiseUtils",
+      'esri/core/watchUtils'
     ], {css:true}) as Promise<Modules>);
     
     try{
@@ -163,7 +167,9 @@ const MView:React.FC<IProps> = ({
             layer: fLayer,
             layerView: resultView
           }
-          
+          watchUtils.whenFalseOnce(resultView, "updating", () => {
+            console.log("updating view");
+          });
           layers.push(service);
           return service;
         });
@@ -216,27 +222,16 @@ const MView:React.FC<IProps> = ({
     )
   }
 
-  // const createBarChartData = () => {
+  const updateBarChart = (data:IFeatureSet[]) => {
     
-  //   const years = ['2015', '2016', '2017', '2018'];
-  //   const whereString = createWhere();
-  //   const query = featureService.createQuery();
-  //   query.where = whereString;
-  //   const dataSet:IDataSet[] = [];
+    const years = ['2015', '2015', '2016', '2017', '2018', '2019', '2020', '2021'];
     
-  //   featureService.queryFeatures(query).then((results) => {
-  //     const features = results.features;
-  //     for(let i = 0; i < years.length; i++){
-  //       let startDate
-  //       let filtered = features.filter(g => {
-  //         return g.attributes.Date_Created.getYear() == years[i];
-  //       });
-  //       let data = {name:years[i], count: filtered? 0 : filtered.length}
-  //       dataSet.push(data);
-  //     }
-      
-  //   });
-  //};
+    const dataSet:IDataSet[] = [];
+    
+    for(let i = 0; i < data.length; i++){
+      //DirectionsFeatureSet.push({name:updateLayerNames, count:data[i].length});
+    }
+  };
 
   
   const attachZero = (n:number):string => {
@@ -257,6 +252,68 @@ const MView:React.FC<IProps> = ({
     return featureServices[serviceName].layerView.queryFeatures(query);
   }
 
+  const layerViewTasks = () => {
+    return updateLayerNames.map(name => {
+            return mapView.whenLayerView(featureServices[name].layer);
+          });
+  };
+
+  const multipleLayerView = () => {
+    return new Promise((resolve, reject) =>{
+      Promise.all(layerViewTasks()).then((viewResults) => {
+        if(!viewResults){
+          reject({
+            error: 'failed to fetch data'
+          });
+        }
+
+
+        resolve({viewResults})
+      })
+      .catch(error => {
+        reject(error.message)
+      });
+      
+    });
+  }
+
+  const multipleQueryFeaturesResults = (layerViewResults:IFeatureLayerView[]) => {
+    
+      return new Promise((resolve, reject) => {
+
+        
+        layerViewResults.map((result) => {
+          if(!result){
+            console.log("Query result error")
+          }else{
+            const layerView = result;
+            const query = layerView.createQuery();
+
+            return layerView.queryFeatures(query).then((response) => {
+
+              return response.features;
+
+            }, (e) => {return resolve(e)})
+          }
+        });
+        Promise.all(featureSetDataTask()).then((featureSetSData) => {
+          if(featureSetSData){
+            reject({
+                error: 'failed to fetch data'
+            });
+
+            resolve({featureSetSData});
+        }
+        })
+        .catch((error) => {
+          reject(error.message);
+        });
+      });
+
+    }
+    );
+  };
+
   const mapViewControl = ():void => {
 
     const whereString = createWhere();
@@ -265,6 +322,8 @@ const MView:React.FC<IProps> = ({
       
       layerViewQueryFeature(layerName, whereString).then((response) => {
         
+        const data = response.features;
+        //updateBarChart(data);
       },
       (e) =>{
 
