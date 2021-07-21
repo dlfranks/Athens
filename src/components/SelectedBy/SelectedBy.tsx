@@ -90,7 +90,7 @@ const SelectedBy:React.FC<IProps> = ({onChange, options, onClickCount, selectedV
                     'left': '100px',
                 }}
             >{countFeatures}</span>
-            {/* <BarChart data={barData} width={200} height={400}/> */}
+            <BarChart data={barData} width={200} height={400}/>
         </div>    
     )
 }

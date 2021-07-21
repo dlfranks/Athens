@@ -56,7 +56,7 @@ const MView:React.FC<IProps> = ({
   const [mapView, setMapView] = React.useState<IMapView>(null);
   const [featureServices, setFeatureServices] = React.useState<FeatureServiceInfo>(null);
   const [selectedSet, setSelectedSet] = React.useState<string>(selectionOptions[0]);
-  const [barDataSet, setBarDataSet] = React.useState<IDataSet[]>();
+  const [barDataSet, setBarDataSet] = React.useState<IDataSet[]>([]);
   const [countFeatures, setCountFeatures] = React.useState<number>();
   const [timeSliderDates, setTimeSliderDates] = React.useState<ITimeSliderDates>(TimeSliderDates);
   const mapViewRef = React.useRef<HTMLDivElement>();
@@ -194,10 +194,8 @@ const MView:React.FC<IProps> = ({
     
   }
         
-  
-  
   const TimeSliderWidget = () => {
-    if(mapView ==null || featureServices == null)
+    if(mapView ==null || featureServices == null || barDataSet.length == 0)
     {
       return null;
     }
@@ -225,13 +223,29 @@ const MView:React.FC<IProps> = ({
 
   const updateBarChart = (data:IFeatureSet[]) => {
     
-    const years = ['2015', '2015', '2016', '2017', '2018', '2019', '2020', '2021'];
+    //const dataSet:IDataSet[] = [];
+    const dataSet = data.map((d) => {
+      if(d.features.length > 0){
+        const layerName = d.features[0].layer.id;
+        const count = d.features.length;
+        return {name:layerName, count: count}
+      }
+      
+    });
+    const sortedDataset:IDataSet[] = []
+    updateLayerNames.forEach(layerName => {
+      let d:IDataSet[] = dataSet.filter(d => {
+        return d.name == layerName
+      });
+      if(d.length == 1){
+        sortedDataset.push({name:layerName, count: d[0].count});
+      }else{
+        sortedDataset.push({name:layerName, count: 0});
+      }
+    });
     
-    const dataSet:IDataSet[] = [];
+    setBarDataSet(sortedDataset);
     
-    for(let i = 0; i < data.length; i++){
-      //DirectionsFeatureSet.push({name:updateLayerNames, count:data[i].length});
-    }
   };
 
   
@@ -309,12 +323,13 @@ const MView:React.FC<IProps> = ({
   const mapViewControl = ():void => {
 
     const whereString = createWhere();
-    updateLayerViews();
+    
     multipleLayerView().then((results:any) => {
       const layerViews = results.results;
       multipleQueryFeaturesResults(layerViews).then((featureDataResult) => {
         const data = featureDataResult;
-        
+        updateLayerViews();
+        updateBarChart(data);
       }, (err) => {
         console.log(err);
       });
@@ -371,7 +386,7 @@ const MView:React.FC<IProps> = ({
     if(featureServices)
       mapViewControl();
     
-  }, [timeSliderDates]);
+  }, [timeSliderDates, updateBarChart]);
 
   
 
