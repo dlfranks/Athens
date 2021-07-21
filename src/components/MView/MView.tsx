@@ -6,7 +6,7 @@ import IFeatureSet from 'esri/tasks/support/FeatureSet';
 import IMap from 'esri/Map';
 import IMapView from 'esri/views/MapView';
 import IExtent from 'esri/geometry/Extent';
-import IPromiseUtils, { resolve } from 'esri/core/promiseUtils';
+import IPromiseUtils from 'esri/core/promiseUtils';
 import IWatchUtils from 'esri/core/watchUtils';
 import TimeSlider from '../TimeSlider/TimeSlider';
 import { convertDateFormatToIntlOptions } from 'esri/intl';
@@ -240,10 +240,10 @@ const MView:React.FC<IProps> = ({
   } 
   const createWhere = ():string => {
     
-    let start = timeSliderDates.start.getFullYear() + "-" + attachZero(timeSliderDates.start.getMonth()+1) + "-" + attachZero(timeSliderDates.start.getDate()+1); 
-    let end = timeSliderDates.end.getFullYear() + "-" + attachZero(timeSliderDates.end.getMonth()+1) + "-" + attachZero(timeSliderDates.end.getDate()+1); 
+    let start = attachZero(timeSliderDates.start.getMonth()+1) + '/' + attachZero(timeSliderDates.start.getDate()+1)+ '/'+timeSliderDates.start.getFullYear(); 
+	    let end = attachZero(timeSliderDates.end.getMonth()+1) + '/' + attachZero(timeSliderDates.end.getDate()+1) + '/' + timeSliderDates.end.getFullYear(); 
     
-    return `Date_Created >= DATE '${start}' and Date_Created <= DATE '${end}'`;
+    return `Date_Created >= '${start}' and Date_Created <= '${end}'`;
   }
   
   const layerViewQueryFeature = (serviceName:string, whereString:string): Promise<IFeatureSet>=> {
@@ -253,7 +253,13 @@ const MView:React.FC<IProps> = ({
     return featureServices[serviceName].layerView.queryFeatures(query);
   }
 
+  const updateLayerViews = () => {
+    const whereString = createWhere();
+    updateLayerNames.forEach(name => featureServices[name].layer.definitionExpression = whereString);
+  };
+
   const layerViewTasks = () => {
+    
     return updateLayerNames.map(name => {
             return mapView.whenLayerView(featureServices[name].layer);
           });
@@ -261,15 +267,15 @@ const MView:React.FC<IProps> = ({
 
   const multipleLayerView = () => {
     return new Promise((resolve, reject) =>{
-      Promise.all(layerViewTasks()).then((viewResults:IFeatureLayerView[]) => {
-        if(!viewResults){
+      Promise.all(layerViewTasks()).then((results:IFeatureLayerView[]) => {
+        if(!results){
           reject({
             error: 'failed to fetch data'
           });
         }
 
 
-        resolve({viewResults})
+        resolve({results})
       })
       .catch(error => {
         reject(error.message)
@@ -278,44 +284,40 @@ const MView:React.FC<IProps> = ({
     });
   }
 
-  const multipleQueryFeaturesResults = (results:IFeatureLayerView[]) => {
-      const layerViewResults:IFeatureLayerView[] = [];
-      for(let i = 0; i < results.length; i++){
-        layerViewResults.push(new FeatureLayerView(results[i]));
-      }
+  const multipleQueryFeaturesResults = async(results:IFeatureLayerView[]):Promise<IFeatureSet[]> => {
+
+      const featureSetTask = results.map((result:IFeatureLayerView) => {
+        if(!result){
+          
+        }else{
+          const layerView = result;
+          const query = layerView.createQuery();
+
+          return layerView.queryFeatures(query);
+        }
+      });
       return new Promise((resolve, reject) => {
-
-        const featureSetTask = layerViewResults.map((result) => {
-          if(!result){
-            resolve("Query result error");
-          }else{
-            const layerView = result;
-            const query = layerView.createQuery();
-
-            return layerView.queryFeatures(query);
-          }
-        });
-
         Promise.all(featureSetTask).then((response) => {
           const data = response;
           resolve(data);
         }, (e) => {
           return resolve(e)
         });
-        
-
     });
   };
 
   const mapViewControl = ():void => {
 
     const whereString = createWhere();
-    multipleLayerView().then((layerViews:IFeatureLayerView[]) => {
-      multipleQueryFeaturesResults(layerViews).then((dataset) => {
-        const data = dataset;
+    updateLayerViews();
+    multipleLayerView().then((results:any) => {
+      const layerViews = results.results;
+      multipleQueryFeaturesResults(layerViews).then((featureDataResult) => {
+        const data = featureDataResult;
+        
       }, (err) => {
-        console.log(err)
-      })
+        console.log(err);
+      });
     }, 
     (err) => {
       console.log(err)
