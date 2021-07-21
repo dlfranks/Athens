@@ -14,6 +14,7 @@ import SelectedBy, {ISelectedSet} from '../SelectedBy/SelectedBy';
 import { Module } from 'webpack';
 import {UpdateLayerName} from '../../types/';
 import DirectionsFeatureSet from 'esri/tasks/support/DirectionsFeatureSet';
+import FeatureLayerView from 'esri/views/layers/FeatureLayerView';
 
 export const queryName = "Status";
 export type FeatureService ={
@@ -260,7 +261,7 @@ const MView:React.FC<IProps> = ({
 
   const multipleLayerView = () => {
     return new Promise((resolve, reject) =>{
-      Promise.all(layerViewTasks()).then((viewResults) => {
+      Promise.all(layerViewTasks()).then((viewResults:IFeatureLayerView[]) => {
         if(!viewResults){
           reject({
             error: 'failed to fetch data'
@@ -277,58 +278,51 @@ const MView:React.FC<IProps> = ({
     });
   }
 
-  const multipleQueryFeaturesResults = (layerViewResults:IFeatureLayerView[]) => {
-    
+  const multipleQueryFeaturesResults = (results:IFeatureLayerView[]) => {
+      const layerViewResults:IFeatureLayerView[] = [];
+      for(let i = 0; i < results.length; i++){
+        layerViewResults.push(new FeatureLayerView(results[i]));
+      }
       return new Promise((resolve, reject) => {
 
-        
-        layerViewResults.map((result) => {
+        const featureSetTask = layerViewResults.map((result) => {
           if(!result){
-            console.log("Query result error")
+            resolve("Query result error");
           }else{
             const layerView = result;
             const query = layerView.createQuery();
 
-            return layerView.queryFeatures(query).then((response) => {
-
-              return response.features;
-
-            }, (e) => {return resolve(e)})
+            return layerView.queryFeatures(query);
           }
         });
-        Promise.all(featureSetDataTask()).then((featureSetSData) => {
-          if(featureSetSData){
-            reject({
-                error: 'failed to fetch data'
-            });
 
-            resolve({featureSetSData});
-        }
-        })
-        .catch((error) => {
-          reject(error.message);
+        Promise.all(featureSetTask).then((response) => {
+          const data = response;
+          resolve(data);
+        }, (e) => {
+          return resolve(e)
         });
-      });
+        
 
-    }
-    );
+    });
   };
 
   const mapViewControl = ():void => {
 
     const whereString = createWhere();
-
-    updateLayerNames.forEach(layerName => {
-      
-      layerViewQueryFeature(layerName, whereString).then((response) => {
-        
-        const data = response.features;
-        //updateBarChart(data);
-      },
-      (e) =>{
-
-      });
+    multipleLayerView().then((layerViews:IFeatureLayerView[]) => {
+      multipleQueryFeaturesResults(layerViews).then((dataset) => {
+        const data = dataset;
+      }, (err) => {
+        console.log(err)
+      })
+    }, 
+    (err) => {
+      console.log(err)
     });
+
+    
+    
     // if(selectedSet =='All'){
     //   updateLayerNames.forEach(layer => {
 
