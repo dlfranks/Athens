@@ -37,14 +37,14 @@ export default function TimeSliderView ({mapView = null, timeExtendDates, setTim
           view: mapView,
           mode:"time-window",
           fullTimeExtent: { // entire extent of the timeSlider
-            start: new Date(2014, 10, 20),
-            end: new Date(2021, 7, 19)
+            start:new Date(2019, 1, 10),
+            end:new Date(2019, 3, 20)
           },
           playRate:2000,
           stops:{
             interval:{
-              value:3,
-              unit:"months"
+              value:7,
+              unit:"days"
             }
           },
           values:[
@@ -60,6 +60,7 @@ export default function TimeSliderView ({mapView = null, timeExtendDates, setTim
           let start:Date = new Date(timeExtent.start);
           let end:Date = new Date(timeExtent.end);
           
+          console.log({'start': start, 'end': end});
           setTimeSliderDates({...timeExtendDates, start:start, end: end});
           
           //mapViewControl();

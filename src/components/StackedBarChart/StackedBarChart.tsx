@@ -56,7 +56,15 @@ const StackedBarChart:React.FC<IProps> = ({}: IProps) => {
         const layers = stackGenerator(data);
         const extent = [
             0,
-            max(layers, layer => max(layer, sequence => sequence[1]))
+            max(layers, layer => max(layer, sequence =>sequence[1]))
+        ];
+        const extent1 = [
+            0,
+            max(layers, (layer) => {
+                return max(layer, (sequence) =>{
+                    return sequence[1];
+                });
+            })
         ];
 
         // scales

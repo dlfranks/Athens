@@ -32,27 +32,34 @@ const BarChart:React.FC<IProps> = ({width, height, data}: IProps) => {
     
     const barChartRef = React.useRef<SVGSVGElement>();
     
-    const init = () => {
-        const selection = select(barChartRef.current);
-        // selection.append('rect')
-        //                     .attr('width', dimensions.width)
-        //                     .attr('height', dimensions.height)
-        //                     .attr('fill', 'orange');
+    const remove = () => {
         
+        select(barChartRef.current).selectAll('g').remove().exit();
+    };
+
+    const draw = () =>{
+        const selection = select(barChartRef.current);
         const maxValue = max(data, data => data.count);
         const y = scaleLinear()
                     .domain([0, maxValue])
                     .range([dimensions.charHeight, 0]);
 
         const x = scaleBand()
-                    .domain(data.map(d => d.name))
+                    .domain(data.map(d => {
+                        // if(d.name == 'Fuel Storage Operations') 
+                        //     return 'FSO';
+                        // else if(d.name == 'Boiler Heating Unit')
+                        //     return 'BHU';
+                        // else
+                            return d.name;
+                    }))
                     .range([0, dimensions.charWidth])
                     .paddingInner(.1)
                     .paddingOuter(.1);
                     
-        const yAxis = axisLeft(y).ticks(3).tickFormat(d => `${d} %`);
+        const yAxis = axisLeft(y).ticks(3).tickFormat(d => `${d}`);
         const xAxis = axisBottom(x);
-
+        remove();
         const xAxisGroup = selection
                                 .append('g')
                                 .attr('transform', `translate(${dimensions.marginLeft}, ${dimensions.charHeight+10})`)
@@ -75,13 +82,17 @@ const BarChart:React.FC<IProps> = ({width, height, data}: IProps) => {
             .attr('y', d => y(d.count))
             //.append('rect').attr('width', 5).attr('height', 10).attr('fill', 'blue');
             console.log(selection)
+    };
 
-        
-    }
     React.useEffect(() => {
         
-        init();
-    }, [])
+        draw();
+    }, []);
+    React.useEffect(() => {
+        
+        draw();
+    }, [data]);
+
     return(
         <div style={{
             'position':'relative',

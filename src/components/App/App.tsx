@@ -25,11 +25,11 @@ const App:React.FC<{}> = ({}) =>{
   return (
   <div>
     <TopHeader/>
-    <MView/>
+     <MView/> 
     {/* <StackedBarChart/>
     <LineChart/>  
     <AreaChart/>  
-    <StackedAreaChart/>   */}
+    <StackedAreaChart/>  */}
      
 
   </div>);

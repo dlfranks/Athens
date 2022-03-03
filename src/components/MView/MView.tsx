@@ -38,12 +38,12 @@ interface ILayerUrl{
   id:string;
   url:string;
 }
-const updateLayerNames = ['Fuel Storage Operations', 'ICEngine', 'ODS', 'Boiler Heating Unit', 'Misc'];
+const updateLayerNames = ['Fuel Storage Operations', 'ICEngine', 'ODS', 'Misc', 'Boiler Heating Unit'];
 const selectionOptions = ['All'].concat(updateLayerNames);
 
 const TimeSliderDates: ITimeSliderDates = {
-  start:new Date(2014, 10, 20),
-  end:new Date(2021, 7, 19)
+  start:new Date(2019, 1, 10),
+  end:new Date(2019, 3, 20)
 }
 interface IProps {
   children?:React.ReactNode;
@@ -62,7 +62,7 @@ const MView:React.FC<IProps> = ({
   const mapViewRef = React.useRef<HTMLDivElement>();
   
   
-  const baseUrl = 'https://gis1imcloud1.amec.com/arcgis/rest/services/6466/AEI_Lejeune/FeatureServer/'
+  const baseUrl = 'https://gis1imcloud1.amec.com/arcgis/rest/services/6466/AEI_Japan/FeatureServer/'
   const layerNum = 9;
   const layerCount = 8;
   const layerUrls:ILayerUrl[] = [
@@ -131,19 +131,21 @@ const MView:React.FC<IProps> = ({
         basemap: "streets-vector"
         });
         
-      var bound = new Extent ({
-          "xmin":-8652157.46053707,
-          "ymin":4104570.290565183,
-          "xmax": -8577968.474010149,
-          "ymax": 4136259.5862388243,
-          "spatialReference":{"wkid":3785}
+      const bound = new Extent ({
+        "xmin":-8652157.46053707,
+        "ymin":4104570.290565183,
+        "xmax": -8577968.474010149,
+        "ymax": 4136259.5862388243,
+        "spatialReference":{"wkid":3785},
+                                
       });
         
       const view = new MapView({
         map: map,
         container: mapViewRef.current,
-        extent: bound,
-        zoom:12
+        //extent: bound,
+        center:[139.6600913, 35.2931039],
+        zoom:15,
       });
 
       view.when(() => {
@@ -168,9 +170,9 @@ const MView:React.FC<IProps> = ({
             layer: fLayer,
             layerView: resultView
           }
-          watchUtils.whenFalseOnce(resultView, "updating", () => {
-            console.log("updating view");
-          });
+          // watchUtils.whenFalseOnce(resultView, "updating", () => {
+          //   console.log("updating view");
+          // });
           layers.push(service);
           return service;
         });
@@ -225,26 +227,24 @@ const MView:React.FC<IProps> = ({
     
     //const dataSet:IDataSet[] = [];
     const dataSet = data.map((d) => {
-      if(d.features.length > 0){
-        const layerName = d.features[0].layer.id;
+      const layerName = d.features[0].layer.id;
         const count = d.features.length;
         return {name:layerName, count: count}
-      }
       
     });
-    const sortedDataset:IDataSet[] = []
-    updateLayerNames.forEach(layerName => {
-      let d:IDataSet[] = dataSet.filter(d => {
-        return d.name == layerName
-      });
-      if(d.length == 1){
-        sortedDataset.push({name:layerName, count: d[0].count});
-      }else{
-        sortedDataset.push({name:layerName, count: 0});
-      }
-    });
-    
-    setBarDataSet(sortedDataset);
+    // const sortedDataset:IDataSet[] = []
+    // updateLayerNames.forEach(layerName => {
+    //   let d:IDataSet[] = dataSet.filter(d => {
+    //     return d.name == layerName
+    //   });
+    //   if(d.length == 1){
+    //     sortedDataset.push({name:layerName, count: d[0].count});
+    //   }else{
+    //     sortedDataset.push({name:layerName, count: 0});
+    //   }
+    // });
+    console.log(dataSet);
+    setBarDataSet(dataSet);
     
   };
 
@@ -254,10 +254,10 @@ const MView:React.FC<IProps> = ({
   } 
   const createWhere = ():string => {
     
-    let start = attachZero(timeSliderDates.start.getMonth()+1) + '/' + attachZero(timeSliderDates.start.getDate()+1)+ '/'+timeSliderDates.start.getFullYear(); 
-	    let end = attachZero(timeSliderDates.end.getMonth()+1) + '/' + attachZero(timeSliderDates.end.getDate()+1) + '/' + timeSliderDates.end.getFullYear(); 
+    let start = attachZero(timeSliderDates.start.getMonth()+1) + '/' + attachZero(timeSliderDates.start.getDate())+ '/'+timeSliderDates.start.getFullYear(); 
+	    let end = attachZero(timeSliderDates.end.getMonth()+1) + '/' + attachZero(timeSliderDates.end.getDate()) + '/' + timeSliderDates.end.getFullYear(); 
     
-    return `Date_Created >= '${start}' and Date_Created <= '${end}'`;
+    return `Date_LastEdited >= '${start}' and Date_LastEdited <= '${end}'`;
   }
   
   const layerViewQueryFeature = (serviceName:string, whereString:string): Promise<IFeatureSet>=> {
@@ -298,16 +298,23 @@ const MView:React.FC<IProps> = ({
     });
   }
 
-  const multipleQueryFeaturesResults = async(results:IFeatureLayerView[]):Promise<IFeatureSet[]> => {
-
-      const featureSetTask = results.map((result:IFeatureLayerView) => {
+  //const multipleQueryFeaturesResults = async(results:IFeatureLayerView[]):Promise<IFeatureSet[]> => {
+  const multipleQueryFeaturesResults = ():Promise<IFeatureSet[]> => {
+    const where = createWhere();
+    console.log(where);
+    const results = updateLayerNames.map((layerName) => {
+      return featureServices[layerName].layer;
+    });
+      const featureSetTask = results.map((result:IFeatureLayer) => {
         if(!result){
           
         }else{
-          const layerView = result;
-          const query = layerView.createQuery();
+          const layer = result;
+          const query = layer.createQuery();
+          query.outFields =["*"];
+          query.where = where;
 
-          return layerView.queryFeatures(query);
+          return layer.queryFeatures(query);
         }
       });
       return new Promise((resolve, reject) => {
@@ -315,7 +322,7 @@ const MView:React.FC<IProps> = ({
           const data = response;
           resolve(data);
         }, (e) => {
-          return resolve(e)
+          reject(e)
         });
     });
   };
@@ -323,33 +330,15 @@ const MView:React.FC<IProps> = ({
   const mapViewControl = ():void => {
 
     const whereString = createWhere();
-    
-    multipleLayerView().then((results:any) => {
-      const layerViews = results.results;
-      multipleQueryFeaturesResults(layerViews).then((featureDataResult) => {
+      
+      multipleQueryFeaturesResults().then((featureDataResult) => {
+        console.log("Successfully got the featureDataResult in mapViewControl");
         const data = featureDataResult;
         updateLayerViews();
         updateBarChart(data);
       }, (err) => {
-        console.log(err);
+        console.log("Failed to get featureDataResult in mapViewControl" + err);
       });
-    }, 
-    (err) => {
-      console.log(err)
-    });
-
-    
-    
-    // if(selectedSet =='All'){
-    //   updateLayerNames.forEach(layer => {
-
-    //     featureServices[layer].layerView.layer.definitionExpression = whereString;
-    //   });
-    // }else{
-    //   featureServices[selectedSet].layerView.layer.definitionExpression = whereString;
-    // }
-    
-    
     
   }
   const changeSelect = (selectedValue : string) => {
@@ -386,7 +375,7 @@ const MView:React.FC<IProps> = ({
     if(featureServices)
       mapViewControl();
     
-  }, [timeSliderDates, updateBarChart]);
+  }, [featureServices, timeSliderDates]);
 
   
 
